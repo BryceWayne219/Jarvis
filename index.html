@@ -70,8 +70,8 @@ textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
         <input id="key" class="fld" type="password" autocomplete="off" placeholder="API-Schlüssel einfügen" aria-label="API-Schlüssel">
         <select id="model" class="fld" aria-label="Modell">
-          <option value="gemini-2.5-flash">Gemini Flash</option>
-          <option value="gemini-2.5-flash-lite">Gemini Flash-Lite (schneller)</option>
+          <option value="gemini-3.5-flash">Gemini Flash</option>
+          <option value="gemini-3.5-flash-lite">Gemini Flash-Lite (schneller)</option>
         </select>
         <button class="ghost" id="keySave" type="button">Speichern</button>
         <p class="hint">Der Schlüssel bleibt nur auf diesem Gerät. Nie in den Code schreiben.</p>
@@ -143,7 +143,7 @@ async function ask(model,key,sys,contents){
 async function answer(text){
   const m=text.match(/^merke dir[:,]?\s*(.+)/i);
   if(m&&addNote(m[1])) return 'Gespeichert: „'+m[1].trim()+'“';
-  const model=store.get('jarvis2:model','gemini-2.5-flash');
+  const model=store.get('jarvis2:model','gemini-3.5-flash');
   const key=store.get('jarvis2:key','');
   if(!key) return 'Trag zuerst links unter „Verbindung“ deinen API-Schlüssel ein.';
   const persona=store.get('jarvis2:persona','');
@@ -155,7 +155,7 @@ async function answer(text){
   try{
     let {res,d}=await ask(model,key,sys,msgs);
     if(!res.ok&&[404,500,503].includes(res.status)){
-      const other=model==='gemini-2.5-flash'?'gemini-2.5-flash-lite':'gemini-2.5-flash';
+      const other=model==='gemini-2.5-flash'?'gemini-3.5-flash-lite':'gemini-2.5-flash';
       ({res,d}=await ask(other,key,sys,msgs));
     }
     if(res.status===429) return 'Das kostenlose Limit ist gerade erreicht. Warte eine Minute und versuch es nochmal.';
