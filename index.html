@@ -186,7 +186,7 @@ $('imp').onclick=()=>$('impf').click();
 $('impf').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(x=>{try{JSON.parse(x).forEach(n=>{if(typeof n==='string'&&!notes.includes(n))notes.push(n)});store.set('jarvis2:notes',notes);renderNotes()}catch(_){}})};
 $('menu').onclick=()=>$('side').classList.add('open');
 $('close').onclick=()=>$('side').classList.remove('open');
-$('model').value=store.get('jarvis2:model','gemini-2.5-flash');
+$('model').value=store.get('jarvis2:model','gemini-3.5-flash');
 $('key').value=store.get('jarvis2:key','');
 $('persona').value=store.get('jarvis2:persona','');
 $('persona').onchange=()=>store.set('jarvis2:persona',$('persona').value.trim());
