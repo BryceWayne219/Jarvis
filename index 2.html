@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jarvis 2.0</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#06080b;--panel:#0b0e13;--gold:#c9a24a;--gold2:#e8cd86;--line:rgba(201,162,74,.28);--text:#ece8df;--muted:#8d8b84;--ice:#8fe3ff;color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{color:var(--text);font:16px/1.55 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:radial-gradient(900px 520px at 50% -8%,rgba(143,227,255,.10),transparent 62%),radial-gradient(800px 500px at 50% 115%,rgba(201,162,74,.08),transparent 60%),var(--bg);
+  padding-top:env(safe-area-inset-top,0);padding-bottom:env(safe-area-inset-bottom,0);overflow:hidden}
+.app{height:100%;height:100dvh;display:grid;grid-template-columns:1fr;max-width:1180px;margin:0 auto}
+.app.side-open{grid-template-columns:310px 1fr}
+.app:not(.side-open) aside{display:none}
+aside{background:linear-gradient(180deg,#0d1117,#080a0e);border-right:1px solid var(--line);padding:22px 20px;display:flex;flex-direction:column;gap:14px;overflow:auto;transition:transform .25s,visibility .25s}
+main{display:flex;flex-direction:column;min-width:0;min-height:0;height:100%}
+.serif{font-family:"Cormorant Garamond",Georgia,serif}
+h2{font:600 19px "Cormorant Garamond",Georgia,serif;letter-spacing:.18em;text-transform:uppercase;color:var(--gold2)}
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:12px 18px;border-bottom:1px solid transparent;border-image:linear-gradient(90deg,transparent,var(--gold),transparent) 1}
+.brand{font:600 26px "Cormorant Garamond",Georgia,serif;letter-spacing:.55em;padding-left:.55em;color:var(--gold2);text-align:center}
+.brand small{font-size:12px;letter-spacing:.2em;color:var(--muted);margin-left:.6em}
+header .r{justify-self:end}
+button{font:inherit;color:inherit;cursor:pointer}
+.ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 14px;color:var(--gold2);font-size:13px;letter-spacing:.06em}
+.ghost:hover,.ghost:focus-visible{background:rgba(201,162,74,.12);border-color:var(--gold);outline:none}
+#stage{display:flex;flex-direction:column;align-items:center;padding-top:6px}
+#orb{width:clamp(150px,27vh,240px);height:clamp(150px,27vh,240px)}
+#status{font-size:11px;letter-spacing:.42em;padding-left:.42em;color:var(--ice);opacity:.8;min-height:18px;margin-top:-4px}
+#log{flex:1;min-height:0;overflow:auto;padding:14px 20px;display:flex;flex-direction:column;gap:14px;width:100%;max-width:780px;margin:0 auto}
+.empty{margin:auto;text-align:center;color:var(--muted);max-width:32ch}
+.empty strong{display:block;font:500 30px "Cormorant Garamond",Georgia,serif;color:var(--text);letter-spacing:.08em;margin-bottom:4px}
+.msg{max-width:88%;padding:11px 16px;white-space:pre-wrap;overflow-wrap:anywhere;border-radius:4px 18px 18px 18px}
+.msg code{background:#141a22;padding:1px 6px;border-radius:6px;font-size:.9em}
+.msg.me{align-self:flex-end;background:rgba(201,162,74,.12);border:1px solid var(--line);border-radius:18px 4px 18px 18px}
+.msg.ai{align-self:flex-start;background:rgba(143,227,255,.04);border-left:2px solid var(--gold);border-radius:2px 18px 18px 2px}
+form{display:flex;gap:10px;padding:12px 20px 18px;width:100%;max-width:780px;margin:0 auto}
+textarea{flex:1;resize:none;background:#0a0d12;color:var(--text);border:1px solid var(--line);border-radius:22px;padding:12px 18px;font:inherit;max-height:140px}
+textarea:focus{outline:1px solid var(--gold);box-shadow:0 0 0 4px rgba(201,162,74,.12)}
+.send{background:linear-gradient(135deg,var(--gold2),var(--gold));color:#0a0a0a;border:0;border-radius:999px;padding:0 24px;font-weight:500;letter-spacing:.08em}
+.send:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+#notes{list-style:none;padding:0;display:flex;flex-direction:column;gap:8px}
+#notes li{display:flex;gap:8px;align-items:flex-start;padding:9px 12px;border:1px solid var(--line);border-radius:12px;font-size:14px;background:rgba(201,162,74,.04)}
+#notes li span{flex:1;overflow-wrap:anywhere}
+#notes button{background:none;border:0;color:var(--muted);padding:0 4px;font-size:18px;line-height:1}
+#notes button:hover{color:var(--gold2)}
+.hint{color:var(--muted);font-size:13px}
+.vo{display:block;margin-top:8px;padding:3px 12px;font-size:12px}
+summary.hint{cursor:pointer;color:var(--gold2)}
+.add{display:flex;gap:8px}
+.fld{flex:1;min-width:0;background:#0a0d12;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:8px 11px;font:inherit;font-size:14px}
+@media (max-width:760px){
+  .app,.app.side-open{grid-template-columns:1fr}
+  aside{display:flex!important;position:fixed;inset:0 18% 0 0;z-index:5;padding-top:calc(22px + env(safe-area-inset-top,0))}
+  .app:not(.side-open) aside{transform:translateX(-105%);visibility:hidden}
+  .app.side-open aside{transform:none;visibility:visible;box-shadow:0 0 0 100vmax rgba(0,0,0,.6)}
+  .brand{font-size:21px;letter-spacing:.4em}
+}
+@media (max-height:560px){#orb{width:90px;height:90px}}
+@media (prefers-reduced-motion:reduce){aside{transition:none}}
+</style>
+</head>
+<body>
+<div class="app side-open" id="app">
+  <aside id="side" aria-label="Gedächtnis">
+    <div style="display:flex;align-items:center"><h2>Gedächtnis</h2><span style="flex:1"></span><button class="ghost" id="close" type="button">Schließen</button></div>
+    <p class="hint">Alles, was Jarvis über dich weiß. Es bleibt nur auf diesem Gerät.</p>
+    <details id="conn"><summary class="hint">Verbindung (OpenRouter)</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <input id="key" class="fld" type="password" autocomplete="off" placeholder="OpenRouter-Schlüssel (sk-or-…)" aria-label="OpenRouter-Schlüssel">
+        <select id="model" class="fld" aria-label="Modell"><option value="auto">Automatisch (openrouter/free)</option></select>
+        <button class="ghost" id="keySave" type="button">Speichern</button>
+        <p class="hint">Schlüssel unter openrouter.ai/settings/keys erstellen. Er bleibt nur auf diesem Gerät, nie in den Code schreiben.</p><p class="hint" id="used"></p>
+      </div></details>
+    <details id="vbox"><summary class="hint">Stimme (Fish Audio)</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        <input id="fkey" class="fld" type="password" autocomplete="off" placeholder="Fish-Audio-Schlüssel" aria-label="Fish-Audio-Schlüssel">
+        <input id="fvoice" class="fld" placeholder="Stimmen-ID oder Link (optional)" aria-label="Stimmen-ID">
+        <select id="fmodel" class="fld" aria-label="Stimmenmodell">
+          <option value="s2.1-pro-free">s2.1 Pro Free (kostenlos, falls verfügbar)</option>
+          <option value="s2-pro">s2 Pro</option>
+          <option value="s2.1-pro">s2.1 Pro</option>
+        </select>
+        <label class="hint" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="fauto"> Antworten automatisch vorlesen</label>
+        <div class="add"><button class="ghost" id="fsave" type="button">Speichern</button><button class="ghost" id="ftest" type="button">Testen</button><button class="ghost" id="fstop" type="button">Stopp</button></div>
+        <p class="hint" id="fmsg"></p>
+      </div></details>
+    <details><summary class="hint">Persönlichkeit &amp; Gelerntes</summary>
+      <textarea id="persona" class="fld" rows="3" style="margin-top:8px;width:100%" placeholder="Zum Beispiel: Antworte locker, duze mich." aria-label="Persönlichkeit"></textarea>
+      <p class="hint" id="learned" style="margin-top:8px"></p>
+      <div class="add" style="margin-top:8px"><button class="ghost" id="learn" type="button">Jetzt lernen lassen</button><button class="ghost" id="unlearn" type="button">Zurücksetzen</button></div></details>
+    <div class="add"><input id="noteIn" class="fld" placeholder="Neue Notiz" aria-label="Neue Notiz"><button class="ghost" id="noteAdd" type="button">Speichern</button></div>
+    <div class="add"><button class="ghost" id="exp" type="button">Sichern</button><button class="ghost" id="imp" type="button">Laden</button><input id="impf" type="file" accept=".json" hidden></div>
+    <ul id="notes"></ul>
+    <p class="hint" id="noNotes">Noch nichts gespeichert. Sag einfach „Merke dir …“ oder „Vergiss …“.</p>
+  </aside>
+  <main>
+    <header>
+      <div><button class="ghost" id="menu" type="button">Gedächtnis</button></div>
+      <div class="brand">JARVIS<small>2.0</small></div>
+      <div class="r"><button class="ghost" id="clear" type="button">Neuer Chat</button></div>
+    </header>
+    <div id="stage"><canvas id="orb" aria-hidden="true"></canvas><div id="status">BEREIT</div></div>
+    <div id="log" aria-live="polite"></div>
+    <form id="form">
+      <textarea id="in" rows="1" placeholder="Womit kann ich helfen?" aria-label="Nachricht"></textarea>
+      <button class="send" type="submit">Senden</button>
+    </form>
+  </main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const store={
+  get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+let chat=store.get('jarvis2:chat',[]), notes=store.get('jarvis2:notes',[]);
+
+/* ---------- Reaktor-Kugel ---------- */
+const cv=$('orb'),cx=cv.getContext('2d');
+let running=false,busy=false,W=0,dpr=1,mode='idle',energy=.2,rot=0;
+const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const pts=[];for(let i=0;i<280;i++){const y=1-2*(i+.5)/280,r=Math.sqrt(1-y*y),a=i*2.39996;pts.push([Math.cos(a)*r,y,Math.sin(a)*r])}
+function fit(){dpr=Math.min(devicePixelRatio||1,2);W=cv.clientWidth;cv.width=cv.height=Math.round(W*dpr)}
+function setMode(m){mode=m;$('status').textContent={idle:'BEREIT',think:'DENKT NACH',speak:'ANTWORTET'}[m]}
+function frame(t){
+  if(!W)fit();
+  energy+=((mode==='think'?1:mode==='speak'?.6:.18)-energy)*.05;
+  rot+=(.003+energy*.028)*(reduce?.2:1);
+  const S=cv.width,c=S/2,R=c*.6,pulse=1+Math.sin(t/(1000-energy*600))*.07*(.4+energy);
+  cx.clearRect(0,0,S,S);
+  let g=cx.createRadialGradient(c,c,0,c,c,R*.7*pulse);
+  g.addColorStop(0,'rgba(235,252,255,'+(.6+energy*.4)+')');g.addColorStop(.35,'rgba(143,227,255,'+(.25+energy*.25)+')');g.addColorStop(1,'rgba(143,227,255,0)');
+  cx.fillStyle=g;cx.beginPath();cx.arc(c,c,R*.75*pulse,0,6.3);cx.fill();
+  const cr=Math.cos(rot),sr=Math.sin(rot),ct=Math.cos(.38),st=Math.sin(.38),wob=energy*.1;
+  for(const p of pts){
+    const k=1+Math.sin(t/260+p[0]*6+p[1]*9)*wob;
+    const x=(p[0]*cr+p[2]*sr)*k,z=-p[0]*sr+p[2]*cr,y=p[1]*k;
+    const y2=y*ct-z*st,z2=y*st+z*ct,d=(z2+1)/2;
+    cx.fillStyle='rgba(143,227,255,'+(.1+d*.8)+')';
+    cx.beginPath();cx.arc(c+x*R,c+y2*R,(.6+d*1.5+energy*.7)*dpr,0,6.3);cx.fill();
+  }
+  const rr=R*1.28;
+  for(let i=0;i<72;i++){
+    const a=i/72*6.283-rot*.7,x=Math.cos(a)*rr,y=Math.sin(a)*rr*.34;
+    const ca=Math.cos(.5),sa=Math.sin(.5);
+    cx.fillStyle='rgba(232,205,134,'+(.35+.5*Math.abs(Math.sin(a*3+t/400*energy)))+')';
+    cx.beginPath();cx.arc(c+x*ca-y*sa,c+x*sa+y*ca,1.3*dpr,0,6.3);cx.fill();
+  }
+  cx.strokeStyle='rgba(201,162,74,.35)';cx.lineWidth=dpr;cx.beginPath();cx.arc(c,c,R*1.02,0,6.3);cx.stroke();
+  if(!document.hidden)requestAnimationFrame(frame);else running=false;
+}
+addEventListener('resize',fit);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!running){running=true;requestAnimationFrame(frame)}});
+running=true;requestAnimationFrame(frame);
+
+/* ---------- Chat & Gedächtnis ---------- */
+function fmt(t){
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`([^`]+)`/g,'<code>$1</code>');
+}
+function takeNotes(t){
+  t=t.replace(/\[\[MERKEN:\s*(.+?)\]\]/g,(_,n)=>{n=n.trim();if(n&&!notes.includes(n))addNote(n);return ''})
+   .replace(/\[\[VERGESSEN:\s*(.+?)\]\]/g,(_,k)=>{k=k.trim().toLowerCase();notes=notes.filter(n=>!n.toLowerCase().includes(k));store.set('jarvis2:notes',notes);renderNotes();return ''}).trim();
+  return t||'Erledigt.';
+}
+function renderChat(){
+  const log=$('log'); log.innerHTML='';
+  if(!chat.length){log.innerHTML='<div class="empty"><strong>Guten Tag.</strong>Schreib mir. Mit „Merke dir …“ oder „Vergiss …“ pflege ich dein Gedächtnis.</div>';return}
+  const vk=store.get('jarvis2:fkey','');
+  chat.forEach(m=>{const d=document.createElement('div');d.className='msg '+m.r;if(m.r==='ai')d.innerHTML=fmt(m.t);else d.textContent=m.t;
+    if(m.r==='ai'&&!m.tmp&&!m.err&&vk){const b=document.createElement('button');b.className='ghost vo';b.type='button';b.textContent='Vorlesen';b.onclick=()=>speak(m.t);d.appendChild(b)}
+    log.appendChild(d)});
+  log.scrollTop=log.scrollHeight;
+}
+function renderNotes(){
+  const ul=$('notes'); ul.innerHTML='';
+  notes.forEach((n,i)=>{
+    const li=document.createElement('li'),s=document.createElement('span'),b=document.createElement('button');
+    s.textContent=n; b.textContent='×'; b.setAttribute('aria-label','Notiz löschen');
+    b.onclick=()=>{notes.splice(i,1);store.set('jarvis2:notes',notes);renderNotes()};
+    li.append(s,b); ul.appendChild(li);
+  });
+  $('noNotes').style.display=notes.length?'none':'block';
+  $('learned').textContent=store.get('jarvis2:learned','')?'Gelernt: '+store.get('jarvis2:learned',''):'Noch nichts gelernt.';
+}
+function addNote(t){t=t.trim();if(!t)return false;notes.push(t);store.set('jarvis2:notes',notes);renderNotes();return true}
+
+const txt=d=>{const c=d&&d.choices&&d.choices[0];return c&&c.message&&typeof c.message.content==='string'?c.message.content:''};
+const API='https://openrouter.ai/api/v1';
+const KEY='jarvis2:orkey';
+const T_FIRST=30000,T_THINK=70000,T_CHUNK=20000,T_FULL=60000;
+async function modelList(){
+  const c=store.get('jarvis2:ormlist',null),today=new Date().toDateString();
+  if(c&&c.day===today&&c.free&&c.free.length)return c.free;
+  try{
+    const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),8000);
+    const res=await fetch(API+'/models',{signal:ac.signal});clearTimeout(tm);
+    const d=await res.json();
+    const sc=m=>{const n=(m.id.match(/(\d+)b/gi)||[]).map(x=>parseInt(x));return (n.length?Math.max(...n):20)-(/coder|vl|embed|guard|safe|image|audio/i.test(m.id)?500:0)};
+    const free=(d.data||[]).filter(m=>/:free$/.test(m.id)&&(m.context_length||0)>=8000&&m.pricing&&Number(m.pricing.prompt)===0&&Number(m.pricing.completion)===0)
+      .sort((a,b)=>sc(b)-sc(a)).map(m=>m.id);
+    if(free.length){store.set('jarvis2:ormlist',{day:today,free});return free}
+  }catch(e){}
+  return [];
+}
+async function candidates(){
+  const pick=store.get('jarvis2:ormodel','auto'),free=(await modelList()).slice(0,2);
+  if(pick==='auto')return ['openrouter/free',...free];
+  return [pick,'openrouter/free'];
+}
+async function fillModels(){
+  const sel=$('model'),cur=store.get('jarvis2:ormodel','auto'),free=await modelList();
+  sel.innerHTML='<option value="auto">Automatisch (openrouter/free)</option>';
+  free.slice(0,12).forEach(id=>{const o=document.createElement('option');o.value=id;o.textContent=id.replace(':free','');sel.appendChild(o)});
+  if(cur!=='auto'&&!free.includes(cur)){const o=document.createElement('option');o.value=cur;o.textContent=cur;sel.appendChild(o)}
+  sel.value=cur;
+}
+async function ask(model,key,sys,msgs,onText){
+  const ac=new AbortController();let tm=setTimeout(()=>ac.abort(),onText?T_FIRST:T_FULL);
+  try{
+    const res=await fetch(API+'/chat/completions',{method:'POST',signal:ac.signal,
+      headers:{'content-type':'application/json','authorization':'Bearer '+key},
+      body:JSON.stringify({model,stream:!!onText,messages:[{role:'system',content:sys},...msgs]})});
+    if(!onText||!res.ok||!res.body){let d={};try{d=await res.json()}catch(e){}return {res,d}}
+    clearTimeout(tm);tm=setTimeout(()=>ac.abort(),T_THINK);
+    const rd=res.body.getReader(),dec=new TextDecoder();let buf='',full='',used='';
+    for(;;){
+      const {done,value}=await rd.read();if(done)break;
+      clearTimeout(tm);tm=setTimeout(()=>ac.abort(),T_CHUNK);
+      buf+=dec.decode(value,{stream:true});
+      let i;while((i=buf.indexOf('\n'))>=0){
+        const line=buf.slice(0,i).trim();buf=buf.slice(i+1);
+        if(line.startsWith('data:')&&!line.includes('[DONE]')){
+          try{const j=JSON.parse(line.slice(5)),c=j.choices&&j.choices[0],t=c&&c.delta&&c.delta.content;used=j.model||used;if(t){full+=t;onText(full)}}catch(e){}
+        }
+      }
+    }
+    return {res,d:{streamed:full,model:used}};
+  }finally{clearTimeout(tm)}
+}
+async function call(sys,msgs,onText){
+  const key=store.get(KEY,'');let last,err;
+  for(const m of await candidates()){
+    last=null;
+    for(const stream of [true,false]){
+      try{
+        if(onText)onText('');
+        last=await ask(m,key,sys,msgs,stream?onText:null);last.model=m;err=null;
+        if(last.res.ok&&stream){const got=last.d.streamed!==undefined?last.d.streamed:txt(last.d);if(!got.trim())continue}
+        break;
+      }catch(e){err=e;last=null}
+    }
+    if(last&&(last.res.ok||![404,429,500,502,503].includes(last.res.status)))return last;
+  }
+  if(last)return last;
+  throw err||new Error('keine Antwort');
+}
+function history(){
+  const out=[];
+  for(const c of chat){if(c.tmp||c.err)continue;const role=c.r==='me'?'user':'assistant';
+    if(out.length&&out[out.length-1].role===role)out[out.length-1].content+='\n'+c.t;else out.push({role,content:c.t})}
+  const h=out.slice(-20);while(h.length&&h[0].role!=='user')h.shift();while(h.length&&h[h.length-1].role!=='user')h.pop();return h;
+}
+function bad(res,d){
+  const m=d&&d.error&&d.error.message||'';
+  if(res.status===401)return 'Der Schlüssel wird nicht akzeptiert. Prüfe ihn unter „Verbindung“.';
+  if(res.status===402)return 'Dafür fehlt Guthaben bei OpenRouter. Wähle ein kostenloses Modell oder lade etwas auf.';
+  if(res.status===429)return 'Das kostenlose Limit ist erreicht (ohne Guthaben etwa 20 Anfragen pro Minute und 50 pro Tag). Warte kurz oder bis morgen.';
+  return 'Fehler ('+res.status+'): '+(m||'unbekannt');
+}
+async function answer(text,onText){
+  const key=store.get(KEY,'');
+  if(!key){const m=text.match(/^merke dir[:,]?\s*(.+)/i);return m&&addNote(m[1])?{t:'Gespeichert: „'+m[1].trim()+'“'}:{t:'Trag zuerst links unter „Verbindung“ deinen OpenRouter-Schlüssel ein.',err:1}}
+  const persona=store.get('jarvis2:persona',''),learned=store.get('jarvis2:learned','');
+  const sys='Du bist Jarvis, der souveräne, höfliche persönliche Assistent des Nutzers, im Ton eines Butlers von Bruce Wayne: gelassen, präzise, mit trockenem Humor. Antworte auf Deutsch, klar und kurz.'
+    +'\nGedächtnis-Regeln: Sagt der Nutzer „merke dir …“ oder erzählt er etwas Dauerhaftes über sich (Ziele, Vorlieben, Projekte, Fakten), formuliere es als einen kurzen, sauberen Satz (zum Beispiel „Studiert im 4. Lehrjahr“, keine Rohabschrift) und hänge ihn am Ende deiner Antwort als [[MERKEN: Satz]] an. Sagt er „vergiss …“, hänge [[VERGESSEN: Stichwort]] an. Bestätige in einem kurzen Satz. Höchstens zwei Marker pro Antwort, sonst nie.'
+    +(persona?'\nStil-Wunsch des Nutzers: '+persona:'')+(learned?'\nGelernt über seine Vorlieben: '+learned:'')
+    +(notes.length?'\nDas weißt du über den Nutzer:\n- '+notes.join('\n- '):'');
+  try{
+    const r=await call(sys,history(),onText);
+    if(!r.res.ok)return {t:bad(r.res,r.d)+' ('+r.model+')',err:1};
+    $('used').textContent='Zuletzt genutzt: '+(r.d.model||r.model);
+    const t=r.d.streamed!==undefined?r.d.streamed:txt(r.d);
+    return t.trim()?{t}:{t:'Keine Antwort erhalten. Versuch es nochmal.',err:1};
+  }catch(e){return {t:e&&e.name==='AbortError'?'Zeitüberschreitung: Das Modell hat nicht geantwortet. Versuch es nochmal oder wähle unter „Verbindung“ ein anderes Modell.':'Keine Verbindung. Prüfe dein Internet. ('+(e&&e.message||e)+')',err:1}}
+}
+
+/* ---------- Stimme (Fish Audio), nur Ausgabe, kein Mikrofon ---------- */
+const SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQAAAAA=';
+const player=new Audio();let playing=false;
+const plain=t=>strip(t).replace(/\*\*|`/g,'').replace(/\s+/g,' ').trim().slice(0,1200);
+function unlock(){try{player.src=SILENT;player.play().catch(()=>{})}catch(e){}}
+function stopSpeak(){try{player.pause()}catch(e){}playing=false;if(!busy)setMode('idle')}
+async function speak(text){
+  const key=store.get('jarvis2:fkey','');
+  if(!key){$('fmsg').textContent='Trag zuerst deinen Fish-Audio-Schlüssel ein.';$('vbox').open=true;return}
+  const t=plain(text);if(!t)return;
+  stopSpeak();$('fmsg').textContent='Stimme lädt …';
+  try{
+    const body={text:t,format:'mp3'},v=store.get('jarvis2:fvoice','');if(v)body.reference_id=v;
+    const res=await fetch('https://api.fish.audio/v1/tts',{method:'POST',
+      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json','model':store.get('jarvis2:fmodel','s2.1-pro-free')},body:JSON.stringify(body)});
+    if(!res.ok){
+      $('fmsg').textContent=res.status===401?'Der Fish-Schlüssel wird nicht akzeptiert.':res.status===402?'Kein Guthaben bei Fish Audio. Lade es unter fish.audio/app/billing auf oder wähle das Free-Modell.':res.status===429?'Zu viele Anfragen bei Fish Audio. Warte kurz.':'Fish Audio meldet Fehler '+res.status+'.';
+      return;
+    }
+    const url=URL.createObjectURL(await res.blob());
+    player.src=url;
+    player.onended=player.onerror=()=>{URL.revokeObjectURL(url);playing=false;if(!busy)setMode('idle')};
+    await player.play();playing=true;setMode('speak');$('fmsg').textContent='';
+  }catch(e){$('fmsg').textContent='Die Stimme ist nicht erreichbar. Der Browser blockiert die Verbindung eventuell, oder das Abspielen wurde verhindert.';playing=false;if(!busy)setMode('idle')}
+}
+
+/* ---------- Tägliche Selbstverbesserung ---------- */
+async function reflect(force){
+  const key=store.get(KEY,''),today=new Date().toDateString();
+  if(!key||(!force&&(store.get('jarvis2:reflect','')===today||(chat.length<4&&notes.length<8))))return;
+  store.set('jarvis2:reflect',today);setMode('think');$('status').textContent='RÄUMT GEDÄCHTNIS AUF';
+  const prompt='Du pflegst das Gedächtnis eines persönlichen Assistenten. Gib NUR JSON zurück: {"notes":[...],"style":"..."}. "notes": die bereinigte Liste (Doppelte zusammenführen, Veraltetes streichen, neue dauerhafte Fakten aus dem Gespräch ergänzen, kurze klare Sätze, höchstens 40). "style": 1 bis 3 Sätze, wie der Nutzer Antworten mag (Länge, Ton, was ihm gefällt oder nicht), aus Gespräch und bisherigem Stil.\n\nBisherige Notizen:\n'+JSON.stringify(notes)+'\nBisheriger Stil: '+store.get('jarvis2:learned','')+'\nGespräch:\n'+chat.slice(-30).map(c=>(c.r==='me'?'Nutzer: ':'Jarvis: ')+c.t).join('\n');
+  try{
+    const {res,d}=await call('Antworte nur mit JSON, ohne Erklärung.',[{role:'user',content:prompt}]);
+    const j=JSON.parse(txt(d).replace(/```json|```/g,'').trim());
+    if(res.ok&&Array.isArray(j.notes)&&j.notes.every(n=>typeof n==='string')){
+      store.set('jarvis2:backup',notes);notes=j.notes.slice(0,40);store.set('jarvis2:notes',notes);
+      if(typeof j.style==='string')store.set('jarvis2:learned',j.style.slice(0,400));
+    }
+  }catch(e){}
+  renderNotes();setMode('idle');
+}
+
+/* ---------- Bedienung ---------- */
+const strip=t=>t.replace(/\[\[(MERKEN|VERGESSEN):[\s\S]*?\]\]/g,'').replace(/\[\[[^\]]*$/,'').trim();
+$('form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const t=$('in').value.trim(); if(!t||busy)return;
+  busy=true;if(store.get('jarvis2:fauto',false))unlock();$('in').value=''; $('in').style.height='auto';
+  chat.push({r:'me',t}); chat.push({r:'ai',t:'…',tmp:1}); renderChat(); setMode('think');
+  let first=true,speakText='';
+  try{
+    const r=await answer(t,s=>{
+      const b=$('log').lastChild,v=strip(s);if(!b||!v)return;
+      if(first){first=false;setMode('speak')}
+      b.innerHTML=fmt(v);$('log').scrollTop=$('log').scrollHeight;
+    });
+    chat=chat.filter(c=>!c.tmp);
+    const a=takeNotes(r.t);
+    chat.push(r.err?{r:'ai',t:a,err:1}:{r:'ai',t:a}); chat=chat.slice(-200); store.set('jarvis2:chat',chat); renderChat();
+    if(!r.err)speakText=a;
+  }catch(err){
+    chat=chat.filter(c=>!c.tmp);chat.push({r:'ai',t:'Unerwarteter Fehler: '+(err&&err.message||err),err:1});renderChat();
+  }finally{
+    busy=false;
+    if(speakText&&store.get('jarvis2:fauto',false))speak(speakText);
+    else{setMode('speak');setTimeout(()=>{if(!busy&&!playing)setMode('idle')},900)}
+  }
+});
+$('in').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px'});
+$('in').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&matchMedia('(hover:hover)').matches){e.preventDefault();$('form').requestSubmit()}});
+$('clear').onclick=()=>{chat=[];store.set('jarvis2:chat',chat);renderChat()};
+$('noteAdd').onclick=()=>{if(addNote($('noteIn').value))$('noteIn').value=''};
+$('noteIn').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('noteAdd').click()}});
+$('exp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(notes,null,1)],{type:'application/json'}));a.download='jarvis-gedaechtnis.json';a.click()};
+$('imp').onclick=()=>$('impf').click();
+$('impf').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(x=>{try{JSON.parse(x).forEach(n=>{if(typeof n==='string'&&!notes.includes(n))notes.push(n)});store.set('jarvis2:notes',notes);renderNotes()}catch(_){}})};
+$('learn').onclick=()=>reflect(true);
+$('unlearn').onclick=()=>{store.set('jarvis2:learned','');renderNotes()};
+$('persona').value=store.get('jarvis2:persona','');
+$('persona').onchange=()=>store.set('jarvis2:persona',$('persona').value.trim());
+$('model').value=store.get('jarvis2:ormodel','auto');
+$('key').value=store.get(KEY,'');
+$('keySave').onclick=()=>{store.set(KEY,$('key').value.trim());store.set('jarvis2:ormodel',$('model').value);store.set('jarvis2:ormlist',null);fillModels();$('conn').open=false};
+$('conn').open=!store.get(KEY,'');
+fillModels();
+$('fkey').value=store.get('jarvis2:fkey','');
+$('fvoice').value=store.get('jarvis2:fvoice','');
+$('fmodel').value=store.get('jarvis2:fmodel','s2.1-pro-free');
+$('fauto').checked=!!store.get('jarvis2:fauto',false);
+$('fsave').onclick=()=>{
+  const id=($('fvoice').value.match(/[0-9a-f]{32}/i)||[$('fvoice').value.trim()])[0];
+  store.set('jarvis2:fkey',$('fkey').value.trim());store.set('jarvis2:fvoice',id);$('fvoice').value=id;
+  store.set('jarvis2:fmodel',$('fmodel').value);store.set('jarvis2:fauto',$('fauto').checked);
+  $('fmsg').textContent='Gespeichert.';renderChat();
+};
+$('ftest').onclick=()=>{unlock();$('fsave').click();speak('Guten Tag. Ich bin Jarvis, zu Ihren Diensten.')};
+$('fstop').onclick=stopSpeak;
+
+/* Seitenleiste: auf großen und kleinen Bildschirmen ein- und ausklappbar */
+const wide=()=>matchMedia('(min-width:761px)').matches;
+const side=v=>$('app').classList.toggle('side-open',v);
+side(wide());
+$('menu').onclick=()=>side(!$('app').classList.contains('side-open'));
+$('close').onclick=()=>side(false);
+$('log').addEventListener('click',()=>{if(!wide())side(false)});
+
+renderChat(); renderNotes(); setTimeout(reflect,2500);
+</script>
+</body>
+</html>
